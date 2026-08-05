@@ -111,11 +111,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # FORK-ONLY TEST PATCH — DO NOT MERGE UPSTREAM.
+  # generate-build-version.yml assumes an AWS role via OIDC whose trust policy is
+  # scoped to MetaMask/metamask-mobile, so it cannot run from a fork. Emit a fixed
+  # number instead to exercise the downstream build-number-at-build-time path.
   generate_rc_build_version:
     name: Generate RC build version
-    uses: ./.github/workflows/generate-build-version.yml
+    runs-on: ubuntu-latest
     needs: validate-and-find-pr
     if: needs.validate-and-find-pr.outputs.has-pr == 'true' && needs.validate-and-find-pr.outputs.rc-frozen != 'true'
+    outputs:
+      build-version: ${{ steps.fake.outputs.build-version }}
+    steps:
+      - name: Emit fixed build number
+        id: fake
+        run: echo "build-version=9999" >> "$GITHUB_OUTPUT"
 
   trigger-ios-rc-build:
     name: Trigger iOS RC Build
